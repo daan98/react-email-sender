@@ -4,14 +4,15 @@ import { FormInterface } from '../interface';
 
 function App() {
   
-  const isValidEmail : RegExp                       = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g
+  const isValidEmail   : RegExp                     = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g;
   const [alert, setAlert]                           = useState<string>('Test');
   const [isEmptyTargetEmail, setIsEmptyTargetEmail] = useState<Boolean>(false);
   const [isEmptyTopic, setIsEmptyTopic]             = useState<Boolean>(false);
   const [isEmptyMessage, setIsEmptyMessage]         = useState<Boolean>(false);
   const [loading, setLoading]                       = useState<Boolean>(false);
   const [isSuccess, setIsSuccess]                   = useState<Boolean>(false);
-  const [form, setForm]                             = useState<FormInterface>({ targetEmail: '', topic: '', message: '' });
+  const [isEmptyCCEmail, setIsEmptyCCEmail]         = useState<Boolean>(false);
+  const [form, setForm]                             = useState<FormInterface>({ targetEmail: '', topic: '', message: '', ccEmail: '' });
   let   timeoutId    : number;
     
   const onEmptyForm = (e : any) => {
@@ -21,72 +22,133 @@ function App() {
       {
         targetEmail: '',
         topic: '',
-        message:''
+        message:'',
+        ccEmail: '',
       }
     );
-    setIsEmptyTargetEmail(false);
-    setIsEmptyTopic(false);
-    setIsEmptyMessage(false);
+    setFieldState('all', '', false, false);
+  };
+
+  const setFieldState = (field : string, alertMessage : string, loadingState : boolean, fieldState : boolean, event ?: any) => {
+    switch (field) {
+      case 'all':
+        setLoading(loadingState);
+        setIsEmptyTargetEmail(fieldState);
+        setIsEmptyCCEmail(fieldState);
+        setIsEmptyTopic(fieldState);
+        setIsEmptyMessage(fieldState);
+        setAlert(alertMessage);
+        break;
+
+      case 'targetEmail':
+        setLoading(loadingState);
+        setIsEmptyTargetEmail(fieldState);
+        setAlert(alertMessage);
+        break;
+
+      case 'topic':
+        setLoading(loadingState);
+        setIsEmptyTopic(fieldState);
+        setAlert(alertMessage);
+        break;
+
+      case 'message':
+        setLoading(loadingState);
+        setIsEmptyMessage(fieldState);
+        setAlert(alertMessage);
+        break;
+
+      case 'ccEmail':
+        setLoading(loadingState);
+        setIsEmptyCCEmail(fieldState);
+        setAlert(alertMessage);
+        break;
+
+      case 'success':
+        setLoading(loadingState);
+        setIsSuccess(fieldState);
+        onEmptyForm(event);
+        setAlert(alertMessage);
+        break;
+
+      default:
+        setLoading(false);
+        setIsEmptyTargetEmail(false);
+        setIsEmptyCCEmail(false);
+        setIsEmptyTopic(false);
+        setIsSuccess(false);
+        setIsEmptyMessage(false);
+        setAlert('');
+        break;
+    }
   };
 
   const handleOnSubmitForm = (e : any) => {
     e.preventDefault();
     clearTimeout(timeoutId);
-    setLoading(true);
-    setIsEmptyTargetEmail(false);
-    setIsEmptyTopic(false);
-    setIsEmptyMessage(false);
+    setFieldState('all', '', true, false);
 
-    if (!form.targetEmail && !form.topic && !form.message) {
-      setLoading(false);
-      setForm({...form});
-      setIsEmptyTargetEmail(true);
-      setIsEmptyTopic(true);
-      setIsEmptyMessage(true);  
-      setAlert('All fields must be filled.');
+    if (!form.targetEmail.trim() && !form.topic.trim() && !form.message.trim()) {
+      setFieldState('all', 'All fields must be filled.', false, true)
+      timeoutId = setTimeout(() => {
+        setFieldState('all', '', false, false);
+      }, 3000);
       return;
     }
 
-    if(!form.targetEmail) {
-      setLoading(false);
-      setForm({...form});
-      setIsEmptyTargetEmail(true);
-      setAlert('Please write an email.');
+    if(!form.targetEmail.trim()) {
+      setFieldState('targetEmail', 'Please write an email.', false, true);
+      timeoutId = setTimeout(() => {
+        setFieldState('targetEmail', '', false, false);
+      }, 3000);
       return;
     }
 
-    if(!form.topic) {
-      setLoading(false);
-      setForm({...form});
-      setIsEmptyTopic(true);
-      setAlert('Please write a topic for the email.');
+    if(!form.topic.trim()) {
+      setFieldState('topic', 'Please write a topic for the email.', false, true);
+      timeoutId = setTimeout(() => {
+        setFieldState('topic', '', false, false);
+      }, 3000);
       return;
     }
 
-    if(!form.message) {
-      setLoading(false);
-      setForm({...form});
-      setIsEmptyMessage(true);
-      setAlert('Please write a message.')
+    if(!form.message.trim()) {
+      setFieldState('message', 'Please write a message.', false, true);
+      timeoutId = setTimeout(() => {
+        setFieldState('message', '', false, false);
+      }, 3000);
       return;
     }
 
-    if (!isValidEmail.test(form.targetEmail)) {
-      setLoading(false);
-      setIsEmptyTargetEmail(true);
-      setAlert('Please write a valid email');
+    if (!isValidEmail.test(form.targetEmail.trim())) {
+      setFieldState('targetEmail', 'Please write a valid target email.', false, true);
+      timeoutId = setTimeout(() => {
+        setFieldState('targetEmail', '', false, false);
+      }, 3000);
+      return;
+    }
+    
+    if (!isValidEmail.test(form.ccEmail.trim())) {
+      setFieldState('ccEmail', 'Please write a valid CC email.', false, true);
+      timeoutId = setTimeout(() => {
+        setFieldState('ccEmail', '', false, false);
+      }, 3000);
+      return;
+    }
+
+    if(form.ccEmail.trim() === form.targetEmail.trim()) {
+      setFieldState('all', 'CC and target email must be different.', false, true);
+      timeoutId = setTimeout(() => {
+        setFieldState('all', '', false, false);
+      }, 3000);
       return;
     }
 
     timeoutId = setTimeout(() => {
-      setLoading(false);
-      setIsSuccess(true);
-      onEmptyForm(e);
-      setAlert('Email send successfully.');
+      setFieldState('success', 'Email send successfully.', false, true, e);
       setTimeout(() => {
-        setIsSuccess(false);
-        setAlert('');
-      }, 2000);
+        setFieldState('default', '', false, false);
+      }, 3000);
     }, 3000);
     
   };
@@ -111,7 +173,30 @@ function App() {
           />
           <p
             className={
-              !loading && isEmptyTargetEmail && !isEmptyTopic && !isEmptyMessage
+              !loading && isEmptyTargetEmail && !isEmptyTopic && !isEmptyMessage && !isEmptyCCEmail
+              ?
+              'bg-red-500 text-white mt-3 font-bold mx-auto px-5 py-2 rounded-lg w-fit'
+              :
+              'hidden'
+            }
+          >
+            {alert}
+          </p>
+        </div>
+
+        <div className='flex flex-col gap-y-1'>
+          <label className='block w-fit font-bold text-lg' htmlFor="targetEmail">Email (CC)</label>
+          <input
+            type="email"
+            placeholder='CC email'
+            name='ccEmail'
+            className='bg-white border-2 rounded-md px-3 py-2'
+            value={form.ccEmail}
+            onChange={(e : any) => setForm({...form, [e.target.name]: e.target.value})}
+          />
+          <p
+            className={
+              !loading && !isEmptyTargetEmail && !isEmptyTopic && !isEmptyMessage && isEmptyCCEmail
               ?
               'bg-red-500 text-white mt-3 font-bold mx-auto px-5 py-2 rounded-lg w-fit'
               :
@@ -134,7 +219,7 @@ function App() {
           />
           <p
             className={
-              !loading && !isEmptyTargetEmail && isEmptyTopic && !isEmptyMessage
+              !loading && !isEmptyTargetEmail && isEmptyTopic && !isEmptyMessage && !isEmptyCCEmail
               ?
               'bg-red-500 text-white mt-3 font-bold mx-auto px-5 py-2 rounded-lg w-fit'
               :
@@ -157,7 +242,7 @@ function App() {
           ></textarea>
           <p
             className={
-              !loading && !isEmptyTargetEmail && !isEmptyTopic && isEmptyMessage
+              !loading && !isEmptyTargetEmail && !isEmptyTopic && isEmptyMessage && !isEmptyCCEmail
               ?
               'bg-red-500 text-white mt-3 font-bold mx-auto px-5 py-2 rounded-lg w-fit'
               :
@@ -171,7 +256,14 @@ function App() {
         <div className='flex justify-between gap-5'>
         <button
           type='submit'
-          className='bg-pink-400 text-white font-bold w-full flex justify-center items-center gap-2'
+          className={
+            form.targetEmail === '' && form.topic === '' && form.message === ''&& form.ccEmail === ''
+            ?
+            'bg-pink-400 text-white font-bold w-full flex justify-center items-center gap-2 p-3 rounded-md opacity-50'
+            :
+            'bg-pink-400 text-white font-bold w-full flex justify-center items-center gap-2 p-3 rounded-md'
+          }
+          disabled={!form.targetEmail && !form.topic && !form.message && !form.ccEmail  ? true : false}
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
@@ -181,8 +273,15 @@ function App() {
 
         <button
           type='button'
-          className='bg-gray-800 text-white font-bold w-full flex justify-center items-center gap-2 p-3'
+          className={
+            !form.targetEmail && !form.topic  && !form.message && !form.ccEmail
+            ?
+            'bg-gray-800 text-white font-bold w-full flex justify-center items-center gap-2 p-3 rounded-md opacity-50'
+            :
+            'bg-gray-800 text-white font-bold w-full flex justify-center items-center gap-2 p-3 rounded-md'
+          }
           onClick={(e : any) => onEmptyForm(e)}
+          disabled={!form.targetEmail && !form.topic && !form.message && !form.ccEmail ? true : false}
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -193,7 +292,7 @@ function App() {
 
         <p
           className={
-            !loading && isEmptyTargetEmail && isEmptyTopic && isEmptyMessage
+            !loading && isEmptyTargetEmail && isEmptyTopic && isEmptyMessage && isEmptyCCEmail
             ?
             'bg-red-500 text-white mt-3 font-bold mx-auto px-5 py-2 rounded-lg w-fit'
             :
